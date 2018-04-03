@@ -96,7 +96,6 @@ void loop() {
       PORTK = STOP; // STOP
       m = 0;
       safety_counter = 0;
-      steering_by_sensors = 1; 
     }
     else {
       running = 1;
@@ -166,8 +165,9 @@ void control(byte s, byte m){
     motor.write(0);
     safety_counter = 0;
     running = 0;
+    steering_by_sensors = 1;
   }
-  else if (m == -1) {
+  else if (m == 1) {
     PORTK = CCW;   // CW rotation
     motor.write(FAST);
     safety_counter ++;
@@ -243,9 +243,6 @@ void steering(uint8_t bumper_status) {
       }
     
 // set limits for m in case acceleration() is used
-//      if (m < MINIMAL) {
-//         m = MINIMAL;
-//      }
 
       if (m > FAST) {
          m = FAST;

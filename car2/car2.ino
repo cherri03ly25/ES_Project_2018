@@ -14,14 +14,6 @@
 // i2c communication
 #define SLAVE_ADDRESS 0x4a
 
-// bumper
-#define BUMPER_PORT PORTA
-#define BUMPER_DDR  DDRA
-#define BUMPER_PIN  PINA
-uint8_t bumper_status = 0b11111111;
-uint32_t safety_counter = 0;
-#define SAFETY_LIMIT 400000 //270000
- 
 // steering servo
 Servo myservo;  
 #define SERVO_PORT  PORTB
@@ -62,6 +54,10 @@ byte m = 0; // motor val
 #define BUTTON_PRESS_DELAY_TIME 50
 uint8_t running = 0;
 
+//safe stop
+#define SAFETY_LIMIT 400000 //270000
+uint32_t safety_counter = 0;
+ 
 
 void setup() {
   // i2c
@@ -72,9 +68,6 @@ void setup() {
   
   //set button pin to input
   START_BUTTON_PORT |= _BV(START_BUTTON_BIT);
-  
-  // set bumper pins to input
-  BUMPER_DDR = 0b00000000;
    
   // steering
   myservo.attach(11);  
@@ -94,7 +87,6 @@ void loop() {
       PORTK = STOP; // STOP
       m = 0;
       safety_counter = 0;
-      steering_by_sensors = 1; 
     }
     else {
       running = 1;
@@ -139,7 +131,6 @@ void receiveData(int byteCount) {
 }
 
 
-
 void sendData() {
   byte data[] = {s,m};
   switch (cmd) {
@@ -162,7 +153,7 @@ void control(byte s, byte m){
     safety_counter = 0;
     running = 0;
   }
-  else if (m == -1) {
+  else if (m == 1) {
     PORTK = CCW;   // CW rotation
     motor.write(FAST);
     safety_counter ++;
@@ -191,28 +182,11 @@ int start_button_pressed() {
 
 }
  
-
-    
-// set limits for m in case acceleration() is used
-//      if (m < MINIMAL) {
-//         m = MINIMAL;
-//      }
-
-      if (m > FAST) {
-         m = FAST;
-      }
-      
-      myservo.write(s); //set steering angle
-      motor.write(m); //set motor speed
-      
-}
-
+   
 void accelerate() {
    if (running) {
       m = m+1;
       PORTK = CW;   // CW rotation
    }
 }
-
-//test
 

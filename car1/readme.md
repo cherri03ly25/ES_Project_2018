@@ -11,7 +11,7 @@ Remote control via VNC (without using static IP for Pi):
 + Pi sends i2c commands to Arduino for start/stop, steering and speed control.
 + Pi reads i2c data back from Arduino.
 
-Missing wifi function. 
+Update client.py for wifi function: Pi reads from arduino and sends control commands to car2's Pi.
 
 
 
