@@ -153,10 +153,7 @@ void sendData() {
   switch (cmd) {
     case 1:
       Wire.write(data,2);
-      break;
-//    case 2:
-//      Wire.write(m);
-//      break;      
+      break;     
   }
 }
 
@@ -265,4 +262,6 @@ void accelerate() {
       PORTK = CW;   // CW rotation
    }
 }
+
+//test
 
