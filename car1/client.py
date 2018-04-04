@@ -20,31 +20,34 @@ def read_from_arduino():
         msg=i2c_msg.read(address, 2)
         bus.i2c_rdwr(msg)
         data = list(msg)
-        print(data)
     return data[0], data[1]
 
 ################################-WIFI-##################################
-HOST = '192.168.43.120' # server IP or Hostname
-PORT = 12345 # Pick an open Port (1000+ recommended), must match the server port
-s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-s.connect((HOST,PORT))
+HOST = '192.168.1.33' # server IP or Hostname (found at terminal: $ hostname -I)
+PORT = 22000 # Pick an open Port (1000+ recommended), must match the server port
+client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+client.connect((HOST,PORT))
 
 def send_to_server(s,m):
-    cmd = str(s)+' '+str(m)
-    s.send(cmd)
+    cmd = str(s) + ' ' + str(m)
+    client.send(str.encode(cmd))
+    print('sending s, m to server')
     return -1;
 
 def receive_from_server():
-    msg = s.recv(1024)  
-    return msg;
+    msg = client.recv(1024)  
+    return msg.decode('utf-8');
 
 
 #################-MAIN-########################
 while True:
     s,m = read_from_arduino()
+    print('Arduino sends:')
     print('s: ', s)
     print('m: ', m)
     send_to_server(s,m)
     msg = receive_from_server()
     print(msg)
-
+    if m == 0:
+        break
+client.close()

@@ -24,43 +24,52 @@ def read_from_arduino():
     return data[0], data[1]
 
 ################################-WIFI-##################################
-HOST = '192.168.43.120' # server IP or Hostname
-PORT = 12345 # Pick an open Port (1000+ recommended), must match the client port
+HOST = '' # should be left empty
+PORT = 22000 # Pick an open Port (1000+ recommended), must match the client port
 
-s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-print ('Socket created')
+def setupServer():
+    server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    print ('Socket created')
+    try:
+        server.bind((HOST, PORT))
+    except socket.error as msg:
+        print(msg)
+    print('Socket bind complete')
+    return server
 
-#managing error exception
-try:
-    s.bind((HOST, PORT))
-except socket.error:
-    print ('Bind failed')
-
-s.listen(5)
-print ('Socket awaiting messages')
-(conn, addr) = s.accept()
-print ('Connected')
+def setupConnection():
+    server.listen(1) #allows one connection at a time
+    conn, address = server.accept()
+    print('Connected to: ' + address[0] + ':' + str(address[1]))
+    return conn
 
 def receive_from_client():
     msg = conn.recv(1024)
+    msg = msg.decode('utf-8')
     msg = msg.split()
-    s = int(msg[0])
-    m = int(msg[1])
-    ##conn.close()
-    return s,m
+    s = str.encode(msg[0])
+    m = str.encode(msg[1])
+    return 90, 0
 
 def send_to_client(msg):
-    conn.send(msg)
-    ##conn.close()
+    conn.send(str.encode(msg))
+    print('Replied')
     return -1;
 
 
 #################-MAIN-########################
+server = setupServer()
+conn = setupConnection()
 while True:
     s,m = receive_from_client()
+    print('Client has sent:')
     print('s: ', s)
     print('m: ', m)
     write_to_arduino(s,m)
-    msg = 'received: s=' + str(s) +', m='+str(m)
+    print('writing s, m to arduino')
+    msg = 'server received: s=' + str(s) + ', m=' + str(m)
     send_to_client(msg)
+    if m == 0:
+        break
+conn.close()
 
