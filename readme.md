@@ -1,4 +1,5 @@
 # Source codes developed for ES project - group G11-CPR: Basic Platform for Vehicle Platooning
+## Branch developed by Cherri
 
 Updated car_wire:
 - Car control and i2c combination
