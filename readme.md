@@ -1,13 +1,12 @@
 # Source codes developed for ES project - group G11-CPR: Basic Platform for Vehicle Platooning
 ## Branch developed by Cherri
 
-Updated car_wire:
-- Car control and i2c combination
-- remote control via VNC
+Updated car_wire_socket:
 
-Separate the car_wire code into control codes for car1 and car2.
-
-Continue developping wifi function.
+    steering and speed control
+    i2c communication between Arduino and RPi
+    wifi socket communication between two RPis
+    remote control via VNC/SSH
 
 
 
