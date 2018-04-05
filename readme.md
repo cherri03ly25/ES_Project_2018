@@ -6,6 +6,11 @@ Updated servo control, i2c and wifi communication:
 - wifi socket communication between two RPis (socket)
 - remote control via VNC/SSH
 
+Implementation: Server car just imitates client car
+- Client Pi reads running status and control parameters from arduino and sends data to server Pi.
+- Server Pi reads running status and control parameters from client Pi and sends control data to arduino.
+
+
 
 
 
