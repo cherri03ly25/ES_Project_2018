@@ -9,19 +9,18 @@ DEVICE_BUS = 1
 # Slave address (Arduino)
 address = 0x4a
 
-def write_to_arduino(s, m):
+def write_to_arduino(running, s, m):
     with SMBusWrapper(DEVICE_BUS) as bus:
-        bus.write_i2c_block_data(address, 0, [s, m])
+        bus.write_i2c_block_data(address, running, [s, m])
     return -1
 
 def read_from_arduino():
     with SMBusWrapper(DEVICE_BUS) as bus:
-        bus.write_byte(address,1)
-        msg=i2c_msg.read(address, 2)
+        bus.write_byte(address,2)
+        msg=i2c_msg.read(address, 3)
         bus.i2c_rdwr(msg)
         data = list(msg)
-        print(data)
-    return data[0], data[1]
+    return data[0], data[1], data[2]
 
 ################################-WIFI-##################################
 HOST = '' # should be left empty
@@ -46,10 +45,11 @@ def setupConnection():
 def receive_from_client():
     msg = conn.recv(1024)
     msg = msg.decode('utf-8')
-    msg = msg.split()
-    s = str.encode(msg[0])
-    m = str.encode(msg[1])
-    return 90, 0
+    data = msg.split()
+    r = int(str.encode(data[0]))
+    s = int(str.encode(data[1]))
+    m = int(str.encode(data[2]))
+    return r, s, m
 
 def send_to_client(msg):
     conn.send(str.encode(msg))
@@ -61,15 +61,17 @@ def send_to_client(msg):
 server = setupServer()
 conn = setupConnection()
 while True:
-    s,m = receive_from_client()
+    r,s,m = receive_from_client()
     print('Client has sent:')
+    print('r: ', r)
     print('s: ', s)
     print('m: ', m)
-    write_to_arduino(s,m)
-    print('writing s, m to arduino')
-    msg = 'server received: s=' + str(s) + ', m=' + str(m)
+    write_to_arduino(r,s,m)
+    print('writing msg to arduino')
+    msg = 'server received: running=' + str(r) + ', s=' + str(s) + ', m=' + str(m)
     send_to_client(msg)
-    if m == 0:
+    print('########################')
+    if m == 1:
         break
 conn.close()
 
