@@ -118,12 +118,13 @@ void receiveData(int byteCount) {
     i++;
   }
  
-  if (msg[0] == 0) {
+  if (msg[0] <= 1) {
     s = msg[1];
     m = msg[2];
     Serial.println(s);
     Serial.println(m);
-    control(s,m); 
+    control(s,m);
+    cmd = msg[0]; 
   }
   else {
     cmd = msg[0]; 
@@ -132,10 +133,10 @@ void receiveData(int byteCount) {
 
 
 void sendData() {
-  byte data[] = {s,m};
+  byte data[] = {running,s,m};
   switch (cmd) {
-    case 1:
-      Wire.write(data,2);
+    case 2:
+      Wire.write(data,3);
       break;
 //    case 2:
 //      Wire.write(m);
@@ -146,24 +147,19 @@ void sendData() {
 //control steering and motor speed according to RPi's command
 void control(byte s, byte m){
   myservo.write(s);
-
-  if (m == 0) {
-    PORTK = STOP; // STOP
-    motor.write(0);
-    safety_counter = 0;
-    running = 0;
-  }
-  else if (m == 1) {
-    PORTK = CCW;   // CW rotation
-    motor.write(FAST);
-    safety_counter ++;
-    running = 1;
-  }
-  else {
-    PORTK = CW;
-    motor.write(m);
-    safety_counter ++;
-    running = 1;
+  motor.write(m);
+  switch (cmd){
+    case 0:
+      PORTK = STOP; // STOP
+      safety_counter = 0;
+      running = 0;
+      break;
+    case 1:
+      PORTK = CW;
+      motor.write(m);
+      safety_counter ++;
+      running = 1;
+      break;
   }
 }
 
