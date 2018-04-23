@@ -11,20 +11,9 @@
 #endif
 #include <util/delay.h>
 
-//tachometer
-#define TACHOMETER PL2
-
 // i2c communication
 #define SLAVE_ADDRESS 0x4a
 
-// bumper
-#define BUMPER_PORT PORTA
-#define BUMPER_DDR  DDRA
-#define BUMPER_PIN  PINA
-uint8_t bumper_status = 0b11111111;
-uint32_t safety_counter = 0;
-#define SAFETY_LIMIT 400000 //270000
- 
 // steering servo
 Servo myservo;  
 #define SERVO_PORT  PORTB
@@ -65,6 +54,10 @@ byte m = 0; // motor val
 #define BUTTON_PRESS_DELAY_TIME 50
 uint8_t running = 0;
 
+//safe stop
+#define SAFETY_LIMIT 500000
+uint32_t safety_counter = 0;
+ 
 
 void setup() {
   // i2c
@@ -75,79 +68,71 @@ void setup() {
   
   //set button pin to input
   START_BUTTON_PORT |= _BV(START_BUTTON_BIT);
-  
-  // set bumper pins to input
-  BUMPER_DDR = 0b00000000;
    
   // steering
-  myservo.attach(11);  //11
+  myservo.attach(11);  
 
   // motor
-  motor.attach(6); //6
+  motor.attach(6);
   // set motor control pins to output
   DDRK|=(1<<INA)|(1<<INB);  
 }
 
-int steering_by_sensors = 0;
-
 void loop() {
+  
   //button pressed for start (long press) or stop (short press)
   if (start_button_pressed()) {
     if (running == 1) {
       running = 0;
-      PORTK = STOP; // STOP
-      m = 0;
-      safety_counter = 0;
     }
     else {
       running = 1;
-      PORTK = CW;   // CW rotation
       m = MINIMAL;
-      safety_counter++;
+      motor.write(m); 
     }
-    motor.write(m);      // set speed
+     // set speed
   }
   
-  // safe stop
-  if (safety_counter > SAFETY_LIMIT) {
-    running = 0;
+  //check running status always
+  if(running){
+    PORTK = CW;
+    safety_counter++;
+  }
+  else{
     PORTK = STOP;
     m = 0;
-    motor.write(m);
+    motor.write(m); 
     safety_counter = 0;
   }
   
-  if (steering_by_sensors) {
-    bumper_status = BUMPER_PIN;
-    steering(bumper_status);
+  // safe stop
+  if(safety_counter > SAFETY_LIMIT) {
+    running = 0;
   }
+  
   
 }
 
-byte msg[3];
 byte cmd = 0;
 
 void receiveData(int byteCount) {
+  byte msg[3];
   int i=0;
   while(Wire.available()) {
     msg[i] = Wire.read();
     i++;
   }
+  
+  cmd = msg[0];
  
-  if (msg[0] <= 1) {
+  if (cmd <= 1) {
     s = msg[1];
     m = msg[2];
     Serial.println(s);
     Serial.println(m);
-    steering_by_sensors = 0;
     control(s,m); 
-    cmd=msg[0];
-  }
-  else {
-    cmd = msg[0]; 
   }
 }
-
 
 
 void sendData() {
@@ -162,19 +147,14 @@ void sendData() {
 //control steering and motor speed according to RPi's command
 void control(byte s, byte m){
   myservo.write(s);
-  motor.write(m);
   switch (cmd){
     case 0:
-      PORTK = STOP; // STOP
-      safety_counter = 0;
       running = 0;
-      steering_by_sensors = 1;
+      //steering_by_sensors = 1;
       break;
     case 1:
-      PORTK = CW;
-      motor.write(m);
-      safety_counter ++;
       running = 1;
+      motor.write(m);
       break;
   }
 }
@@ -194,68 +174,15 @@ int start_button_pressed() {
 
 }
  
-// use bumber status to adjust steering and motor speed
-void steering(uint8_t bumper_status) {
-      if ((bumper_status ^ 0b01111111)==0) {
-        s = LEFT4;
-        m = MINIMAL;   
-        safety_counter = 0;
-      }
-      else if ((bumper_status ^ 0b10111111)==0) {
-        s = LEFT3;
-        m = SLOW;
-        safety_counter = 0;
-      }
-      else if ((bumper_status ^ 0b11011111)==0) {
-        s = LEFT2;
-        m = MEDIUM;
-        safety_counter = 0;
-      }
-      else if ((bumper_status ^ 0b11101111)==0) {
-        s = LEFT1;
-        m = FAST;
-        safety_counter = 0;
-      }
-      else if ((bumper_status ^ 0b11110111)==0) {
-        s = RIGHT1;
-        m = FAST;
-        safety_counter = 0;
-      }
-      else if ((bumper_status ^ 0b11111011)==0) {
-        s = RIGHT2;
-        m = MEDIUM;
-        safety_counter = 0;
-      }
-      else if ((bumper_status ^ 0b11111101)==0) {
-        s = RIGHT3;
-        m = SLOW;
-        safety_counter = 0;
-      }
-      else if ((bumper_status ^ 0b11111110)==0) {
-        s = RIGHT4;
-        m = MINIMAL;
-        safety_counter = 0;
-      }      
-      else {
-         safety_counter++;
-      }
-    
-// set limits for m in case acceleration() is used
-
-      if (m > FAST) {
-         m = FAST;
-      }
-      
-      myservo.write(s); //set steering angle
-      motor.write(m); //set motor speed
-      
-}
-
+   
 void accelerate() {
    if (running) {
       m = m+1;
       PORTK = CW;   // CW rotation
    }
+   
+   if (m > FAST) {
+      m = FAST;
+   }
 }
-
 

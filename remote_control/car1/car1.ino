@@ -6,13 +6,14 @@
 #include <stdio.h>
 #include <avr/io.h>
 #include <avr/interrupt.h>
+
 #ifndef F_CPU
 #define F_CPU 16000000UL
 #endif
 #include <util/delay.h>
 
 //tachometer
-#define TACHOMETER PL2
+#define TACHOMETER PL2 //47
 
 // i2c communication
 #define SLAVE_ADDRESS 0x4a
@@ -22,14 +23,16 @@
 #define BUMPER_DDR  DDRA
 #define BUMPER_PIN  PINA
 uint8_t bumper_status = 0b11111111;
+
+//safe stop
 uint32_t safety_counter = 0;
-#define SAFETY_LIMIT 400000 //270000
+#define SAFETY_LIMIT 500000
  
 // steering servo
 Servo myservo;  
 #define SERVO_PORT  PORTB
 #define SERVO_DDR   DDRB
-#define STEERING_SERVO PB5 // 11 
+#define STEERING_SERVO PB5 //11
 //define steering speed for s
 #define LEFT4 125
 #define LEFT3 115
@@ -40,7 +43,6 @@ Servo myservo;
 #define RIGHT2 80
 #define RIGHT3 65
 #define RIGHT4 55
-
 byte s = NORMAL; // steering val
 
 // motor
@@ -63,12 +65,30 @@ byte m = 0; // motor val
 #define START_BUTTON_PIN PINE
 #define START_BUTTON_BIT PE5
 #define BUTTON_PRESS_DELAY_TIME 50
+
+//global running status
 uint8_t running = 0;
+
+//tachometer
+#define COUNT_PERIOD 2000
+#define PI 3.1416
+#define WHEEL_RADIUS 0.03; //in meters
+unsigned long counts;
+unsigned long start_time;
+unsigned int rps;
+float car_speed;
 
 
 void setup() {
-  // i2c
   Serial.begin(9600);
+  
+  //tachometer
+  TCCR5A = 0; //initialize Timer5
+  TCCR5B = 0;
+  pinMode( 47, INPUT_PULLUP); //external source pin for timer5
+  timer5_reset();
+  
+  // i2c
   Wire.begin(SLAVE_ADDRESS);
   Wire.onReceive(receiveData);
   Wire.onRequest(sendData);
@@ -78,7 +98,7 @@ void setup() {
   
   // set bumper pins to input
   BUMPER_DDR = 0b00000000;
-   
+        
   // steering
   myservo.attach(11);  //11
 
@@ -95,86 +115,95 @@ void loop() {
   if (start_button_pressed()) {
     if (running == 1) {
       running = 0;
-      PORTK = STOP; // STOP
-      m = 0;
-      safety_counter = 0;
     }
     else {
       running = 1;
-      PORTK = CW;   // CW rotation
       m = MINIMAL;
-      safety_counter++;
+      motor.write(m); 
     }
-    motor.write(m);      // set speed
+     // set speed
   }
   
-  // safe stop
-  if (safety_counter > SAFETY_LIMIT) {
-    running = 0;
+  //check running status always
+  if(running){
+    PORTK = CW;
+    safety_counter++;
+  }
+  else{
     PORTK = STOP;
     m = 0;
-    motor.write(m);
+    motor.write(m); 
     safety_counter = 0;
   }
   
+  // safe stop
+  if(safety_counter > SAFETY_LIMIT) {
+    running = 0;
+  }
+  
+  //check if sensors on
   if (steering_by_sensors) {
     bumper_status = BUMPER_PIN;
     steering(bumper_status);
   }
   
+  if (millis() - start_time >= COUNT_PERIOD)
+  {
+    rps = get_rps();
+    car_speed = get_speed();
+    timer5_reset();
+  }
+  
 }
 
-byte msg[3];
 byte cmd = 0;
 
 void receiveData(int byteCount) {
+  byte msg[3];
   int i=0;
   while(Wire.available()) {
     msg[i] = Wire.read();
     i++;
   }
- 
-  if (msg[0] <= 1) {
+  
+  cmd=msg[0];
+  
+  if (cmd <= 1) {
     s = msg[1];
     m = msg[2];
     Serial.println(s);
     Serial.println(m);
-    steering_by_sensors = 0;
-    control(s,m); 
-    cmd=msg[0];
-  }
-  else {
-    cmd = msg[0]; 
+    //steering_by_sensors = 0;
+    control(s,m);  
   }
 }
 
 
 
 void sendData() {
-  byte data[] = {running,s,m};
   switch (cmd) {
     case 2:
+      byte data[] = {running,s,m};
       Wire.write(data,3);
-      break;     
+      break;
+    case 3:
+      byte data[] = {rps, car_speed};
+      Wire.write(data,2);
+      break;   
   }
 }
 
 //control steering and motor speed according to RPi's command
 void control(byte s, byte m){
   myservo.write(s);
-  motor.write(m);
   switch (cmd){
     case 0:
-      PORTK = STOP; // STOP
-      safety_counter = 0;
       running = 0;
-      steering_by_sensors = 1;
+      //steering_by_sensors = 1;
       break;
     case 1:
-      PORTK = CW;
-      motor.write(m);
-      safety_counter ++;
       running = 1;
+      motor.write(m);
       break;
   }
 }
@@ -192,6 +221,36 @@ int start_button_pressed() {
 
         return 0;
 
+}
+
+void timer5_reset(){
+  TCNT5 = 0;
+  //set external clock source pin D5 rising edge
+  TCCR5B =  bit (CS50) | bit (CS51) | bit (CS52);
+  start_time = millis();
+}
+
+unsigned int get_rps(){
+    TCCR5B = 0; //stop counter
+    counts = TCNT5; //frequency limited by unsigned int TCNT5 without rollover counts
+    return counts*1000/COUNT_PERIOD;
+}
+
+float get_speed(){ //in meters/s
+  float s = rps * PI * WHEEL_RADIUS;
+  return s;
+}
+
+
+void accelerate() {
+   if (running) {
+      m = m+1;
+      PORTK = CW;   // CW rotation
+   }
+   
+   if (m > FAST) {
+      m = FAST;
+   }
 }
  
 // use bumber status to adjust steering and motor speed
@@ -251,11 +310,7 @@ void steering(uint8_t bumper_status) {
       
 }
 
-void accelerate() {
-   if (running) {
-      m = m+1;
-      PORTK = CW;   // CW rotation
-   }
-}
+
+
 
 
