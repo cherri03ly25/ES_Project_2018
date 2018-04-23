@@ -9,17 +9,8 @@ DEVICE_ADDR = 0x15
 DEVICE_BUS = 1
 # Slave address (Arduino)
 address = 0x4a
-
 class controller:
-
-    def __init__(self):
-        ################################-WIFI-##################################
-        HOST = '10.100.25.103' # server IP or Hostname (found at terminal: $ hostname -I)
-        PORT = 22000 # Pick an open Port (1000+ recommended), must match the server port
-        #self.client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        #self.client.connect((HOST,PORT))
-
-    def write_to_arduino(self, running, s, m):
+    def write_to_arduino(running, s, m):
         with SMBusWrapper(DEVICE_BUS) as bus:
             bus.write_i2c_block_data(address, running, [s, m])
         return -1
@@ -31,6 +22,13 @@ class controller:
             bus.i2c_rdwr(msg)
             data = list(msg)
         return data[0], data[1], data[2]
+
+    def __init__(self):
+        ################################-WIFI-##################################
+        HOST = '10.100.25.103' # server IP or Hostname (found at terminal: $ hostname -I)
+        PORT = 22000 # Pick an open Port (1000+ recommended), must match the server port
+        self.client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.client.connect((HOST,PORT))
 
     def send_to_server(self, r,s,m):
         cmd = str(r) + ' ' + str(s) + ' ' + str(m)
