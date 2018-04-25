@@ -81,12 +81,12 @@ float car_speed;
 
 void setup() {
   Serial.begin(9600);
-  
+  /*
   //tachometer
   TCCR5A = 0; //initialize Timer5
   TCCR5B = 0;
   pinMode( 47, INPUT_PULLUP); //external source pin for timer5
-  timer5_reset();
+  timer5_reset();*/
   
   // i2c
   Wire.begin(SLAVE_ADDRESS);
@@ -137,22 +137,22 @@ void loop() {
   }
   
   // safe stop
-  if(safety_counter > SAFETY_LIMIT) {
-    running = 0;
-  }
+//  if(safety_counter > SAFETY_LIMIT) {
+//    running = 0;
+//  }
   
   //check if sensors on
   if (steering_by_sensors) {
     bumper_status = BUMPER_PIN;
     steering(bumper_status);
   }
-  
+  /*
   if (millis() - start_time >= COUNT_PERIOD)
   {
     rps = get_rps();
     car_speed = get_speed();
     timer5_reset();
-  }
+  }*/
   
 }
 
@@ -186,25 +186,29 @@ void sendData() {
       byte data[] = {running,s,m};
       Wire.write(data,3);
       break;
-    case 3:
-      byte data[] = {rps, car_speed};
-      Wire.write(data,2);
-      break;   
+//    case 3:
+//      byte data2[] = {rps, car_speed};
+//      Wire.write(data,2);
+//      break;   
   }
 }
 
 //control steering and motor speed according to RPi's command
 void control(byte s, byte m){
-  myservo.write(s);
-  switch (cmd){
-    case 0:
-      running = 0;
-      //steering_by_sensors = 1;
-      break;
-    case 1:
-      running = 1;
-      motor.write(m);
-      break;
+  if(s>=60 && s<=120){
+    myservo.write(s);
+    switch (cmd){
+      case 0:
+        running = 0;
+        //steering_by_sensors = 1;
+        break;
+      case 1:
+        running = 1;
+        if (m <= 0 && m <= 100){
+          motor.write(m);
+        }
+        break;
+    }
   }
 }
 
