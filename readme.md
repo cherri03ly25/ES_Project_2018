@@ -1,14 +1,14 @@
-# Source codes developed for ES project - group G11-CPR: Basic Platform for Vehicle Platooning
+#Basic Platform for Vehicle Platooning
 
-Updated servo control, i2c and wifi communication:
-- steering and speed control (Servo.h)
-- i2c communication between Arduino (Wire.h) and RPi (smbus2)
-- wifi socket communication between two RPis (socket)
-- remote control via VNC/SSH
+Updated source codes:
+- car_arduino.ino for car motion control
+- car_control.py contains car_controller class for i2c commands from RPI
+- wifi_connect.py contains wifi_connector class for RPI-RPI communication
+- leader.py: for leader car to be remotely controlled using the keypad
+- follower.py: for follower car to be controlled by camera vision.
+- other codes are under testing.
 
-Implementation: Server car just imitates client car
-- Client Pi reads running status and control parameters from arduino and sends data to server Pi.
-- Server Pi reads running status and control parameters from client Pi and sends control data to arduino.
+
 
 
 
