@@ -22,8 +22,8 @@ Servo myservo;
 #define SERVO_DDR   DDRB
 #define STEERING_SERVO PB5 //11
 //steering angles
-#define LEFTMOST 125
-#define RIGHTMOST 55
+#define LEFTMOST 120
+#define RIGHTMOST 60
 #define CENTER 90
 byte s = CENTER;
 
@@ -36,8 +36,8 @@ Servo motor;
 #define MSTOP 0b00000000
 #define CCW 0b00000010
 //motor speed
-#define MIN 40
-#define MAX 100
+#define MIN 30
+#define MAX 60
 byte m = 0; // motor val
 
 //button to start/stop running
@@ -85,21 +85,9 @@ void loop() {
   //button pressed for start (long press) or stop (short press)
   if (start_button_pressed()) {
     if (run == 1) {
-//      run = 0;
-//      s = CENTER;
-//      m = 0;
-//      myservo.write(s);
-//      motor.write(m);
-//      PORTK = MSTOP;
       run_stop();
     }
     else {
-//      run = 1;
-//      s = CENTER;
-//      m = MIN;
-//      myservo.write(s);
-//      motor.write(m);
-//      PORTK = CW;
       run_start();
     }
   }
@@ -147,10 +135,7 @@ void receiveData(int byteCount) {
         break;
       
       case WRITE:
-        run = msg[1];
-        s = msg[2];
-        m = msg[3];
-        write_data(run,s,m);
+        full_control(msg[1],msg[2],msg[3]);
         break;
         
       default:
@@ -167,24 +152,25 @@ void sendData() {
 }
 
 void run_stop() {
-  if(run==1){
-    run = 0;
-    s = CENTER;
-    m = 0;
-    myservo.write(s);
-    motor.write(m);
+  if(run == 1){
     PORTK = MSTOP;
+    run = 0;
+    m = 0;
+    motor.write(m);
+    s = CENTER;
+    myservo.write(s);
+
   }
 }
 
 void run_start() {
-  if(run==0){
-    run = 1;
+  if(run == 0){
     s = CENTER;
-    m = MIN;
     myservo.write(s);
+    m = MIN;
     motor.write(m);
     PORTK = CW;
+    run = 1;
   }
   else{
     s = CENTER;
@@ -205,44 +191,63 @@ void decelerate() {
 }
 
 void turn_right() {
-  s -= 5;
+  s-=2;
   if(s < RIGHTMOST) s = RIGHTMOST;
   myservo.write(s);  
 }
 
 void turn_left() {
-  s += 5;
+  s+=2;
   if(s > LEFTMOST) s = LEFTMOST; 
   myservo.write(s); 
 }
 
 void run_back(){
   if(run == 0){
-    run = 1;
     m = MIN;
     motor.write(m);
     PORTK = CCW;
+    run = 1;
   }
 }
   
-  
 
-void write_data(boolean run, byte s, byte m) {
-  if (m < MIN) m = MIN;
-  if (m > MAX) m = MAX;
-  if(s < RIGHTMOST) s = RIGHTMOST;
-  if(s > LEFTMOST) s = LEFTMOST;
+void full_control(boolean running, byte steering, byte motor_speed) {
  
-  if(run) {
+  if(running) {    
+    if (motor_speed < MIN) {
+      m = MIN;
+    }
+    else if (motor_speed > MAX) {
+      m = MAX;
+    }
+    else {
+      m = motor_speed;
+    }    
+    motor.write(m);     
     PORTK = CW;
+    run = 1;   
   }
   else{
     PORTK = MSTOP;
     m = 0;
-  }
+    motor.write(m);     
+    run = 0;
+  } 
   
-  motor.write(m); 
+  {
+  if(s < RIGHTMOST){ 
+    s = RIGHTMOST;
+  }
+  else if(s > LEFTMOST) {
+    s = LEFTMOST;
+  }
+  else {
+    s = steering;
+  }
+ 
   myservo.write(s); 
+  }
   
 }
 
