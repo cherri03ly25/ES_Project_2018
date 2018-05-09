@@ -34,6 +34,22 @@ def main():
             print('Client sent: BACK')
             car2.run_back()
             server.send_to_client('Server replied: BACK')
+        elif cmd == FASTER:
+            print('Client sent: FASTER')
+            car2.run_faster()
+            server.send_to_client('Server replied: FASTER')
+        elif cmd == SLOWER:
+            print('Client sent: SLOWER')
+            car2.run_faster()
+            server.send_to_client('Server replied: SLOWER')
+        elif cmd == RIGHT:
+            print('Client sent: RIGHT')
+            car2.run_faster()
+            server.send_to_client('Server replied: RIGHT')
+        elif cmd == LEFT:
+            print('Client sent: LEFT')
+            car2.run_faster()
+            server.send_to_client('Server replied: LEFT')
         else:
             print('Client sent: ', msg)
 

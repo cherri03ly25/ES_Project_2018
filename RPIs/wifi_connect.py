@@ -1,4 +1,4 @@
-import socket #for wifi
+ import socket #for wifi
 import time
 
 ## ID
@@ -53,12 +53,12 @@ class wifi_connector:
     def receive_from_client(self):
         raw = self.__conn.recv(1024)
         msg = raw.decode('utf-8')
-	cmd = str.encode(msg)
+	#cmd = str.encode(msg)
         ##data = msg.split()
         ##r = int(str.encode(data[1]))
         ##s = int(str.encode(data[2]))
         ##m = int(str.encode(data[3]))
-        return cmd # return string
+        return msg # return string
         
     def send_to_client(self, msg): # msg in string
         self.__conn.send(str.encode(msg))
