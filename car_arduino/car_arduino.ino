@@ -61,9 +61,24 @@ boolean run = 0;
 #define READ 8
 
 byte cmd = -1;
+//#define BUTTON 3
+const byte LED = 7;
 
+/*void switchPressed(){
+  if (digitalRead(BUTTON) == HIGH){
+    digitalWrite(LED, HIGH);
+  }
+  else
+    digitalWrite(LED, LOW);
+
+}
+*/
 void setup() {
   // i2c 
+  pinMode(LED, OUTPUT);
+  //digitalWrite(BUTTON, HIGH);
+  //attachInterrupt(digitalPinToInterrupt(BUTTON), switchPressed, CHANGE);
+  //Serial.print(digitalPinToInterrupt(BUTTON));
   Serial.begin(9600);
   Wire.begin(SLAVE_ADDRESS);
   Wire.onReceive(receiveData);

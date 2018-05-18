@@ -29,61 +29,68 @@ WRITE = 7
 READ = 8
 
 class car_controller:
-    
-    def __init__(self, id):
-        self.__id = id;
-        print('Car' + str(self.__id) + ' is ready to run!')
-	    
-    def __del__(self):
-        print ('Car'+ str(self.__id) + ' says goodbye!') 
+	
+	def __init__(self, id):
+		self.__id = id
+		print('Car' + str(self.__id) + ' is ready to run!')
 		
-    def run_stop(self):
-        with SMBusWrapper(DEVICE_BUS) as bus:
-            bus.write_byte(address, STOP)
-        print('STOP!')
-
-    def run_start(self):
-        with SMBusWrapper(DEVICE_BUS) as bus:
-            bus.write_byte(address, START)
-        print('START!')
-
-    def run_faster(self):
-        with SMBusWrapper(DEVICE_BUS) as bus:
-            bus.write_byte(address, FASTER)
-	print('FASTER!')
-
-    def run_slower(self):
-        with SMBusWrapper(DEVICE_BUS) as bus:
-    	    bus.write_byte(address, SLOWER)
-        print('SLOWER!')
-
-    def turn_right(self):
-	with SMBusWrapper(DEVICE_BUS) as bus:
-	    bus.write_byte(address, RIGHT)
-	print('RIGHT!')
+	def __del__(self):
+		print ('Car'+ str(self.__id) + ' says goodbye!') 
 		
-    def turn_left(self):
-	with SMBusWrapper(DEVICE_BUS) as bus:
-	    bus.write_byte(address, LEFT)
-	print('LEFT!')
+	def run_stop(self):
+		with SMBusWrapper(DEVICE_BUS) as bus:
+			bus.write_byte(address, STOP)
+		print('STOP!')
 		
-    def run_back(self):
-	with SMBusWrapper(DEVICE_BUS) as bus:
-            bus.write_byte(address, BACK)
-	print('BACK!')
-            
-    def write_to_arduino(self, run, steering, speed):
-	with SMBusWrapper(DEVICE_BUS) as bus:
-            bus.write_i2c_block_data(address, WRITE, [run, steering, speed])
-	print('WRITE!')
-	 
-    def read_from_arduino(self): ##run r, steering s and speed m
-        with SMBusWrapper(DEVICE_BUS) as bus:
-	    bus.write_byte(address, READ)
-            msg=i2c_msg.read(address, 3)
-	    bus.i2c_rdwr(msg)
-            data = list(msg)
-	print('READ!')
-	return data[0], data[1], data[2]
-
+	def run_start(self):
+		with SMBusWrapper(DEVICE_BUS) as bus:
+			bus.write_byte(address, START)
+		print('START!')
+		
+	def run_faster(self):
+		with SMBusWrapper(DEVICE_BUS) as bus:
+			bus.write_byte(address, FASTER)
+		print('FASTER!')
+		
+	def run_slower(self):
+		with SMBusWrapper(DEVICE_BUS) as bus:
+			bus.write_byte(address, SLOWER)
+		print('SLOWER!')
+		
+	def turn_right(self):
+		with SMBusWrapper(DEVICE_BUS) as bus:
+			bus.write_byte(address, RIGHT)
+		print('RIGHT!')
+		
+	def turn_left(self):
+		with SMBusWrapper(DEVICE_BUS) as bus:
+			bus.write_byte(address, LEFT)
+		print('LEFT!')
+		
+	def run_back(self):
+		with SMBusWrapper(DEVICE_BUS) as bus:
+			bus.write_byte(address, BACK)
+		print('BACK!')
+		
+	def write_to_arduino(self, run, steering, speed):
+		cnt = 0
+		while True:
+			try:	
+				with SMBusWrapper(DEVICE_BUS) as bus:
+					bus.write_i2c_block_data(address, WRITE, [run, steering, speed])
+				print('WRITE!')
+				break
+			except IOError:
+				cnt += 1
+				if cnt < 20:
+					pass
+	
+	def read_from_arduino(self): ##run r, steering s and speed m
+		with SMBusWrapper(DEVICE_BUS) as bus:
+			bus.write_byte(address, READ)
+			msg=i2c_msg.read(address, 3)
+			bus.i2c_rdwr(msg)
+			data = list(msg)
+		print('READ!')
+		return data[0], data[1], data[2]
 
