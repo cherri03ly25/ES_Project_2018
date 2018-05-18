@@ -36,8 +36,8 @@ Servo motor;
 #define MSTOP 0b00000000
 #define CCW 0b00000010
 //motor speed
-#define MIN 30
-#define MAX 60
+#define MIN 40
+#define MAX 100
 byte m = 0; // motor val
 
 //button to start/stop running
@@ -61,25 +61,12 @@ boolean run = 0;
 #define READ 8
 
 byte cmd = -1;
-//#define BUTTON 3
-const byte LED = 7;
 
-/*void switchPressed(){
-  if (digitalRead(BUTTON) == HIGH){
-    digitalWrite(LED, HIGH);
-  }
-  else
-    digitalWrite(LED, LOW);
-
-}
-*/
 void setup() {
-  // i2c 
-  pinMode(LED, OUTPUT);
-  //digitalWrite(BUTTON, HIGH);
-  //attachInterrupt(digitalPinToInterrupt(BUTTON), switchPressed, CHANGE);
-  //Serial.print(digitalPinToInterrupt(BUTTON));
+  //for error tracking and debugging
   Serial.begin(9600);
+  
+  // i2c 
   Wire.begin(SLAVE_ADDRESS);
   Wire.onReceive(receiveData);
   Wire.onRequest(sendData);
@@ -87,17 +74,17 @@ void setup() {
   //set button pin to input
   START_BUTTON_PORT |= _BV(START_BUTTON_BIT);
       
-  // steering
+  // enable steering servo at pin 11
   myservo.attach(11);  //11
 
-  // motor
+  // enable motor servo at pin 6
   motor.attach(6); //6
   DDRK|=(1<<INA)|(1<<INB);  // set motor control pins to output  
 }
 
 
 void loop() {  
-  //button pressed for start (long press) or stop (short press)
+  //check if the button pressed for start/stop the motor
   if (start_button_pressed()) {
     if (run == 1) {
       run_stop();
@@ -105,10 +92,10 @@ void loop() {
     else {
       run_start();
     }
-  }
+  } 
 }
 
-
+//i2c command receiver and handler
 void receiveData(int byteCount) {
   byte msg[4]={0};
   int i=0;
@@ -155,10 +142,11 @@ void receiveData(int byteCount) {
         
       default:
         break;        
-    } 
+    }
   
 }
 
+//i2c message transmitter 
 void sendData() {
   if(cmd == READ){
       byte data[] = {run,s,m};
@@ -166,6 +154,7 @@ void sendData() {
   }
 }
 
+//to stop the motor
 void run_stop() {
   if(run == 1){
     PORTK = MSTOP;
@@ -178,6 +167,7 @@ void run_stop() {
   }
 }
 
+//to start the motor
 void run_start() {
   if(run == 0){
     s = CENTER;
@@ -193,30 +183,35 @@ void run_start() {
   }  
 }
 
+//to accelerate the motor
 void accelerate() {
    if (run) ++m;
    if (m > MAX) m = MAX;
    motor.write(m);
 }
- 
+
+//to decelerate the motor 
 void decelerate() {
    if (run) --m;
    if (m < MIN) m = MIN;   
    motor.write(m);
 }
 
+//to control the servo for right-side steering
 void turn_right() {
   s-=2;
   if(s < RIGHTMOST) s = RIGHTMOST;
   myservo.write(s);  
 }
 
+//to control the servo for left-side steering
 void turn_left() {
   s+=2;
   if(s > LEFTMOST) s = LEFTMOST; 
   myservo.write(s); 
 }
 
+//to control the motor for backward run
 void run_back(){
   if(run == 0){
     m = MIN;
@@ -226,9 +221,10 @@ void run_back(){
   }
 }
   
-
+// write specific control parameters of steering and speed to the servo and the motor
 void full_control(boolean running, byte steering, byte motor_speed) {
- 
+  
+  //write run and speed values
   if(running) {    
     if (motor_speed < MIN) {
       m = MIN;
@@ -250,6 +246,7 @@ void full_control(boolean running, byte steering, byte motor_speed) {
     run = 0;
   } 
   
+  //write steering values
   {
   if(s < RIGHTMOST){ 
     s = RIGHTMOST;
@@ -264,9 +261,13 @@ void full_control(boolean running, byte steering, byte motor_speed) {
   myservo.write(s); 
   }
   
+  Serial.println("################");
+  Serial.println(run);
+  Serial.println(s);
+  Serial.println(m);
 }
 
-//buton pressed (return 1 for long press, 0 for short press)
+//check if button is pressed for a a short predefined time
 int start_button_pressed() {
 
         if (bit_is_clear(START_BUTTON_PIN, START_BUTTON_BIT)) {
