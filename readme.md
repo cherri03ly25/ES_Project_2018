@@ -9,8 +9,7 @@ Updated source codes:
 - keyboard.py: simple code for testing the printout of control keys
 - tachometer.py: testing code for tachometer measurement
 
-The source code for the following car with object detection: https://github.com/samimahamoed/vision_besed_vehicle_platooning
-
+The source code for the following car with object detection (vehicle_platooning.py in branch test): https://github.com/samimahamoed/vision_besed_vehicle_platooning/tree/test
 
 
 
